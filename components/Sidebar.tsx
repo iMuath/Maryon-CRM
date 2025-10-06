@@ -28,6 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, setCurrentPage })
     { id: 'sales', label: t('sales_pipeline'), icon: BarChart2, page: 'sales' as Page },
     { id: 'customers', label: t('customers'), icon: Users, page: 'customers' as Page },
     { id: 'marketing', label: t('marketing'), icon: Megaphone, page: 'marketing' as Page },
+    { id: 'landing-pages', label: t('landing_pages'), icon: Briefcase, page: 'landing-pages' as Page },
     { id: 'support', label: t('support'), icon: LifeBuoy, page: 'support' as Page },
     { id: 'tasks', label: t('tasks'), icon: CheckSquare, page: 'tasks' as Page },
     { id: 'call-center', label: t('call_center'), icon: Phone, page: 'call-center' as Page },

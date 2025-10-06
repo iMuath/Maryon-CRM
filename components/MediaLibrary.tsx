@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { Upload, Image, Video, Trash2, Copy, Film, Sparkles, Search } from 'lucide-react';
+import { Upload, Image, Video, Trash2, Copy, Film, Sparkles, Search, Pencil } from 'lucide-react';
 import { useLocalization } from '../hooks/useLocalization';
 import { mockMediaAssets } from '../data/mockData';
 import type { MediaAsset } from '../types';
@@ -9,8 +9,27 @@ import { Modal } from './ui/Modal';
 import { GenerateVideoForm } from './GenerateVideoForm';
 import { GenerateImageForm } from './GenerateImageForm';
 import { Select } from './ui/Select';
+import { Input } from './ui/Input';
+import { GoogleGenAI, Modality } from '@google/genai';
 
-const AssetCard: React.FC<{ asset: MediaAsset; onDelete: (id: string) => void }> = ({ asset, onDelete }) => {
+// Helper to convert a file URL (or any URL) to a base64 string and get its mime type
+async function urlToBase64(url: string): Promise<{ base64: string; mimeType: string }> {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const mimeType = blob.type;
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64 = (reader.result as string).split(',')[1];
+            resolve({ base64, mimeType });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+
+
+const AssetCard: React.FC<{ asset: MediaAsset; onDelete: (id: string) => void; onEdit: (asset: MediaAsset) => void }> = ({ asset, onDelete, onEdit }) => {
     const { t } = useLocalization();
     const [copied, setCopied] = useState(false);
 
@@ -33,15 +52,122 @@ const AssetCard: React.FC<{ asset: MediaAsset; onDelete: (id: string) => void }>
                 <p className="font-semibold text-sm truncate text-maryon-text-primary">{asset.name}</p>
                 <p className="text-xs text-maryon-text-secondary">{asset.createdAt}</p>
             </div>
-            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-4">
-                <Button variant="ghost" className="text-white hover:bg-white/20" onClick={handleCopyUrl}>
+            <div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
+                <Button variant="ghost" className="text-white hover:bg-white/20 p-2" title={t('copy_url')} onClick={handleCopyUrl}>
                     {copied ? t('copied') : <Copy className="w-5 h-5" />}
                 </Button>
-                <Button variant="ghost" className="text-white hover:bg-white/20 hover:text-red-400" onClick={() => onDelete(asset.id)}>
+                {asset.type === 'image' && (
+                     <Button variant="ghost" className="text-white hover:bg-white/20 p-2" title={t('edit_with_ai')} onClick={() => onEdit(asset)}>
+                        <Pencil className="w-5 h-5" />
+                    </Button>
+                )}
+                <Button variant="ghost" className="text-white hover:bg-white/20 hover:text-red-400 p-2" title={t('delete')} onClick={() => onDelete(asset.id)}>
                     <Trash2 className="w-5 h-5" />
                 </Button>
             </div>
         </div>
+    );
+};
+
+const ImageEditorModal: React.FC<{
+    asset: MediaAsset | null;
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (originalAssetId: string, newImageUrl: string, newImageName: string) => void;
+}> = ({ asset, isOpen, onClose, onSave }) => {
+    const { t } = useLocalization();
+    const [prompt, setPrompt] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [editedImageUrl, setEditedImageUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setPrompt('');
+            setEditedImageUrl(null);
+            setIsGenerating(false);
+        }
+    }, [isOpen]);
+
+    const handleGenerate = async () => {
+        if (!asset || !prompt) return;
+        setIsGenerating(true);
+        setEditedImageUrl(null);
+        try {
+            const { base64, mimeType } = await urlToBase64(asset.url);
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+
+            const response = await ai.models.generateContent({
+                model: 'gemini-2.5-flash-image',
+                contents: {
+                    parts: [
+                        { inlineData: { data: base64, mimeType } },
+                        { text: prompt },
+                    ],
+                },
+                config: {
+                    responseModalities: [Modality.IMAGE, Modality.TEXT],
+                },
+            });
+            
+            const imagePart = response.candidates?.[0].content.parts.find(p => p.inlineData);
+            if (imagePart?.inlineData) {
+                const newMimeType = imagePart.inlineData.mimeType;
+                const newBase64 = imagePart.inlineData.data;
+                setEditedImageUrl(`data:${newMimeType};base64,${newBase64}`);
+            }
+
+        } catch (error) {
+            console.error("Error editing image:", error);
+            alert("Failed to edit image.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+    
+    const handleSave = () => {
+        if (asset && editedImageUrl) {
+            const newName = `${prompt.substring(0, 20).replace(/\s/g, '_')}_${asset.name}`;
+            onSave(asset.id, editedImageUrl, newName);
+            onClose();
+        }
+    }
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={t('edit_image')}>
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                        <label className="block text-sm font-medium text-maryon-text-secondary mb-2">Original</label>
+                        <img src={asset?.url} alt={asset?.name} className="rounded-lg w-full object-contain border border-maryon-border" />
+                    </div>
+                     <div className="text-center">
+                        <label className="block text-sm font-medium text-maryon-text-secondary mb-2">Edited</label>
+                        <div className="rounded-lg w-full aspect-square border border-maryon-border bg-maryon-hover flex items-center justify-center">
+                            {isGenerating ? <Sparkles className="w-8 h-8 text-maryon-accent animate-spin" /> : 
+                             editedImageUrl ? <img src={editedImageUrl} className="rounded-lg w-full object-contain" /> : <Image className="w-8 h-8 text-maryon-text-muted" />}
+                        </div>
+                    </div>
+                </div>
+                <Input 
+                    id="edit-prompt"
+                    label={t('edit_prompt')}
+                    value={prompt}
+                    onChange={e => setPrompt(e.target.value)}
+                    placeholder={t('edit_prompt_placeholder')}
+                />
+                 <div className="flex justify-end space-x-4 rtl:space-x-reverse pt-4">
+                    <Button type="button" variant="secondary" onClick={onClose} disabled={isGenerating}>
+                      {t('cancel')}
+                    </Button>
+                    <Button type="button" onClick={handleGenerate} disabled={isGenerating || !prompt}>
+                      {isGenerating ? t('generating') : t('generate')}
+                    </Button>
+                    <Button type="button" onClick={handleSave} disabled={isGenerating || !editedImageUrl}>
+                      {t('save')}
+                    </Button>
+                </div>
+            </div>
+        </Modal>
     );
 };
 
@@ -52,10 +178,14 @@ export const MediaLibrary: React.FC = () => {
     const [filter, setFilter] = useState<'all' | 'image' | 'video'>('all');
     const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+    const [isGenerating, setIsGenerating] = useState({ image: false, video: false });
+    const [videoStatus, setVideoStatus] = useState('');
 
     const [searchQuery, setSearchQuery] = useState('');
     const [dateFilter, setDateFilter] = useState({ from: '', to: '' });
     const [sizeFilter, setSizeFilter] = useState<'all' | 'small' | 'medium' | 'large'>('all');
+    
+    const [editingAsset, setEditingAsset] = useState<MediaAsset | null>(null);
     
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setDateFilter(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -63,15 +193,8 @@ export const MediaLibrary: React.FC = () => {
 
     const filteredAssets = useMemo(() => {
         return assets.filter(asset => {
-            // Type filter
-            if (filter !== 'all' && asset.type !== filter) {
-                return false;
-            }
-            // Search filter
-            if (searchQuery && !asset.name.toLowerCase().includes(searchQuery.toLowerCase())) {
-                return false;
-            }
-            // Date filter
+            if (filter !== 'all' && asset.type !== filter) return false;
+            if (searchQuery && !asset.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
             if (dateFilter.from) {
                 const fromDate = new Date(dateFilter.from);
                 fromDate.setHours(0, 0, 0, 0);
@@ -82,10 +205,9 @@ export const MediaLibrary: React.FC = () => {
                 toDate.setHours(23, 59, 59, 999);
                 if (new Date(asset.createdAt) > toDate) return false;
             }
-            // Size filter
             if (sizeFilter !== 'all') {
                 const sizeInBytes = asset.size;
-                const MB = 1048576; // 1024 * 1024
+                const MB = 1048576;
                 if (sizeFilter === 'small' && sizeInBytes >= MB) return false;
                 if (sizeFilter === 'medium' && (sizeInBytes < MB || sizeInBytes > 10 * MB)) return false;
                 if (sizeFilter === 'large' && sizeInBytes <= 10 * MB) return false;
@@ -102,11 +224,12 @@ export const MediaLibrary: React.FC = () => {
         const files = event.target.files;
         if (!files) return;
 
-        const newAssets: MediaAsset[] = Array.from(files).map((file, index) => ({
+        // Fix: Explicitly type `file` as `File` to resolve properties not existing on 'unknown' type.
+        const newAssets: MediaAsset[] = Array.from(files).map((file: File, index) => ({
             id: `MA${(assets.length + index + 1).toString().padStart(3, '0')}`,
             name: file.name,
             type: file.type.startsWith('image/') ? 'image' : 'video',
-            url: URL.createObjectURL(file), // Note: This is a temporary local URL
+            url: URL.createObjectURL(file),
             createdAt: new Date().toISOString().split('T')[0],
             size: file.size,
         }));
@@ -118,33 +241,94 @@ export const MediaLibrary: React.FC = () => {
         document.getElementById('media-upload-input')?.click();
     };
     
-    const handleGenerateImage = (data: { width: number; height: number; prompt: string }) => {
-        const seed = data.prompt.replace(/\s/g, '-') || 'random';
-        const newImageAsset: MediaAsset = {
-            id: `MA${(assets.length + 1).toString().padStart(3, '0')}`,
-            name: `${seed}-${data.width}x${data.height}.jpg`,
-            type: 'image',
-            url: `https://picsum.photos/seed/${seed}/${data.width}/${data.height}`,
-            createdAt: new Date().toISOString().split('T')[0],
-            size: Math.floor(Math.random() * (5 * 1048576)) + 102400, // Random size between 100KB and 5MB
-        };
-        setAssets(prevAssets => [newImageAsset, ...prevAssets]);
-        setIsImageModalOpen(false);
+    const handleGenerateImage = async (data: { prompt: string; aspectRatio: string }) => {
+        setIsGenerating(p => ({...p, image: true}));
+        try {
+            const ai = new GoogleGenAI({apiKey: process.env.API_KEY as string});
+            const response = await ai.models.generateImages({
+                model: 'imagen-4.0-generate-001',
+                prompt: data.prompt,
+                config: { numberOfImages: 1, outputMimeType: 'image/jpeg', aspectRatio: "1:1" }
+            });
+            const base64ImageBytes = response.generatedImages[0].image.imageBytes;
+            const imageUrl = `data:image/jpeg;base64,${base64ImageBytes}`;
+            const newImageAsset: MediaAsset = {
+                id: `MA${(assets.length + 1).toString().padStart(3, '0')}`,
+                name: `${data.prompt.substring(0, 20).replace(/\s/g, '_')}.jpg`,
+                type: 'image',
+                url: imageUrl,
+                createdAt: new Date().toISOString().split('T')[0],
+                size: atob(base64ImageBytes).length,
+            };
+            setAssets(prevAssets => [newImageAsset, ...prevAssets]);
+            setIsImageModalOpen(false);
+        } catch (error) {
+            console.error("Error generating image:", error);
+            alert("Failed to generate image. Check the console for details.");
+        } finally {
+            setIsGenerating(p => ({...p, image: false}));
+        }
     };
 
-    const handleGenerateVideo = (data: { prompt: string; duration: number; aspectRatio: string }) => {
-        console.log('Generating video with data:', data);
-        const newVideoAsset: MediaAsset = {
-            id: `MA${(assets.length + 1).toString().padStart(3, '0')}`,
-            name: `${data.prompt.split(' ').join('-')}.mp4`,
-            type: 'video',
-            url: `https://picsum.photos/seed/${data.prompt.replace(/\s/g, '-')}/400/300`,
-            createdAt: new Date().toISOString().split('T')[0],
-            size: Math.floor(Math.random() * (50 * 1048576)) + (5 * 1048576), // Random size between 5MB and 50MB
-        };
-        setAssets(prevAssets => [newVideoAsset, ...prevAssets]);
+    const handleGenerateVideo = async (data: { prompt: string }) => {
+        setIsGenerating(p => ({...p, video: true}));
+        setVideoStatus(t('video_generating_message'));
         setIsVideoModalOpen(false);
+        try {
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+            let operation = await ai.models.generateVideos({
+                model: 'veo-2.0-generate-001',
+                prompt: data.prompt,
+                config: { numberOfVideos: 1 }
+            });
+
+            while (!operation.done) {
+                await new Promise(resolve => setTimeout(resolve, 10000));
+                operation = await ai.operations.getVideosOperation({ operation: operation });
+            }
+
+            const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
+            if (downloadLink) {
+                 const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+                 const videoBlob = await response.blob();
+                 const videoUrl = URL.createObjectURL(videoBlob);
+                 const newVideoAsset: MediaAsset = {
+                    id: `MA${(assets.length + 1).toString().padStart(3, '0')}`,
+                    name: `${data.prompt.split(' ').join('-')}.mp4`,
+                    type: 'video',
+                    url: videoUrl,
+                    createdAt: new Date().toISOString().split('T')[0],
+                    size: videoBlob.size,
+                };
+                setAssets(prevAssets => [newVideoAsset, ...prevAssets]);
+            } else {
+                 throw new Error("Video generation completed but no download link found.");
+            }
+        } catch (error) {
+            console.error("Error generating video:", error);
+            alert("Failed to generate video. Please try again.");
+        } finally {
+            setIsGenerating(p => ({...p, video: false}));
+            setVideoStatus('');
+        }
     };
+    
+    const handleEditImage = (asset: MediaAsset) => {
+        setEditingAsset(asset);
+    }
+    
+    const handleSaveEditedImage = (originalAssetId: string, newImageUrl: string, newImageName: string) => {
+        const newAsset: MediaAsset = {
+            id: `MA_edit_${Date.now()}`,
+            name: newImageName,
+            type: 'image',
+            url: newImageUrl,
+            createdAt: new Date().toISOString().split('T')[0],
+            size: 0, // Size is not easily determined from data URL without more logic
+        }
+        setAssets(prev => [newAsset, ...prev]);
+        setEditingAsset(null);
+    }
 
 
     const filterButtons = [
@@ -174,6 +358,13 @@ export const MediaLibrary: React.FC = () => {
                     </Button>
                 </div>
             </div>
+
+            {isGenerating.video && (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg flex items-center gap-4">
+                    <Sparkles className="w-6 h-6 animate-spin text-blue-600"/>
+                    <p>{videoStatus}</p>
+                </div>
+            )}
 
             <div className="flex flex-col md:flex-row items-end gap-4 mb-6 p-4 bg-maryon-hover rounded-lg border border-maryon-border">
                 <div className="w-full md:flex-grow">
@@ -226,7 +417,7 @@ export const MediaLibrary: React.FC = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                 {filteredAssets.map(asset => (
-                    <AssetCard key={asset.id} asset={asset} onDelete={handleDelete} />
+                    <AssetCard key={asset.id} asset={asset} onDelete={handleDelete} onEdit={handleEditImage} />
                 ))}
             </div>
         </Card>
@@ -238,6 +429,7 @@ export const MediaLibrary: React.FC = () => {
             <GenerateImageForm
                 onSave={handleGenerateImage}
                 onCancel={() => setIsImageModalOpen(false)}
+                isGenerating={isGenerating.image}
             />
         </Modal>
         <Modal
@@ -248,8 +440,15 @@ export const MediaLibrary: React.FC = () => {
             <GenerateVideoForm
                 onSave={handleGenerateVideo}
                 onCancel={() => setIsVideoModalOpen(false)}
+                isGenerating={isGenerating.video}
             />
         </Modal>
+        <ImageEditorModal
+            asset={editingAsset}
+            isOpen={!!editingAsset}
+            onClose={() => setEditingAsset(null)}
+            onSave={handleSaveEditedImage}
+        />
         </>
     );
 };

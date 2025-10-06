@@ -1,4 +1,4 @@
-import type { Customer, Deal, SupportTicket, MarketingCampaign, Task, CallLog, MediaAsset, ApiKey, EmailTemplate, SocialMediaInsight, EmailMarketingInsight, SystemUser, UserRole } from '../types';
+import type { Customer, Deal, SupportTicket, MarketingCampaign, Task, CallLog, MediaAsset, ApiKey, EmailTemplate, SocialMediaInsight, EmailMarketingInsight, SystemUser, UserRole, LandingPage, LandingPageInsight } from '../types';
 
 export const mockCustomers: Customer[] = [
   { id: 'C001', name: 'Ahmed Al Farsi', company: 'Emaar Properties', email: 'ahmed.farsi@emaar.com', phone: '+966 50 123 4567', status: 'Contact', createdAt: '2023-10-15' },
@@ -151,4 +151,42 @@ export const mockSystemUsers: SystemUser[] = [
     { id: 'user_3', name: 'Noura Abdullah', email: 'noura.a@maryon.com', roleId: 'role_marketing', status: 'Invited' },
     { id: 'user_4', name: 'Hassan Al-Zahrani', email: 'hassan.z@maryon.com', roleId: 'role_support', status: 'Active' },
     { id: 'user_5', name: 'Fahad Al-Mutairi', email: 'fahad.m@maryon.com', roleId: 'role_sales', status: 'Inactive' },
+];
+
+export const mockLandingPages: LandingPage[] = [
+  { 
+    id: 'LP001', 
+    title: 'Riyadh Villa Launch Campaign', 
+    status: 'Published', 
+    createdAt: '2023-11-10',
+    content: [
+        { type: 'hero', id: 'h1', title: 'Luxury Villas in the Heart of Riyadh', subtitle: 'Discover your new home', imageUrl: 'https://picsum.photos/seed/lp1-hero/1200/600', buttonText: 'Inquire Now' },
+        { type: 'gallery', id: 'g1', title: 'Photo Gallery', images: [{id: 'img1', url: 'https://picsum.photos/seed/lp1-g1/800/600', alt: 'Living Room'}, {id: 'img2', url: 'https://picsum.photos/seed/lp1-g2/800/600', alt: 'Bedroom'}]}
+    ]
+  },
+  { 
+    id: 'LP002', 
+    title: 'Jeddah Waterfront Open House', 
+    status: 'Draft', 
+    createdAt: '2023-11-15',
+    content: [
+        { type: 'hero', id: 'h2', title: 'Jeddah Waterfront Apartments', subtitle: 'Breathtaking sea views await.', imageUrl: 'https://picsum.photos/seed/lp2-hero/1200/600', buttonText: 'Register for Open House' }
+    ]
+  },
+  { 
+    id: 'LP003', 
+    title: 'NEOM Investment Opportunities', 
+    status: 'Published', 
+    createdAt: '2023-10-28',
+    content: [
+        { type: 'hero', id: 'h3', title: 'Invest in the Future: NEOM', subtitle: 'Groundbreaking opportunities in the city of tomorrow.', imageUrl: 'https://picsum.photos/seed/lp3-hero/1200/600', buttonText: 'Learn More' },
+        { type: 'features', id: 'f1', title: 'Key Features', features: [{id: 'feat1', icon: 'Area', title: 'Vast Lands', description: 'Large plots available for development.'}, {id: 'feat2', icon: 'Tech', title: 'Smart City', description: 'Integrated with the latest technology.'}]}
+    ]
+  },
+];
+
+export const mockLandingPageInsights: LandingPageInsight[] = [
+    { pageTitle: 'Riyadh Villa Launch Campaign', views: 15234, conversionRate: 5.8, leads: 884, bounceRate: 32.1 },
+    { pageTitle: 'NEOM Investment Opportunities', views: 8972, conversionRate: 10.2, leads: 915, bounceRate: 25.5 },
+    { pageTitle: 'Jeddah Waterfront Open House', views: 4501, conversionRate: 15.5, leads: 698, bounceRate: 20.8 },
 ];

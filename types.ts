@@ -1,5 +1,5 @@
 // Fix: Removed self-import of 'Assignee' which conflicted with its local declaration.
-export type Page = 'dashboard' | 'sales' | 'customers' | 'marketing' | 'support' | 'tasks' | 'call-center' | 'media' | 'settings' | 'user-management';
+export type Page = 'dashboard' | 'sales' | 'customers' | 'marketing' | 'support' | 'tasks' | 'call-center' | 'media' | 'settings' | 'user-management' | 'landing-pages';
 
 // Fix: Renamed from UserRole to UserRoleType to resolve duplicate identifier conflict with the UserRole interface.
 export type UserRoleType = 'marketing' | 'sales' | 'it' | 'customer_service';
@@ -148,4 +148,68 @@ export interface SystemUser {
     email: string;
     roleId: string;
     status: 'Active' | 'Invited' | 'Inactive';
+}
+
+// Landing Page Types
+export type LandingPageBlockType = 'hero' | 'gallery' | 'features' | 'contact_form';
+
+export interface HeroBlock {
+    type: 'hero';
+    id: string;
+    title: string;
+    subtitle: string;
+    imageUrl: string;
+    buttonText: string;
+}
+
+export interface GalleryImage {
+    id: string;
+    url: string;
+    alt: string;
+}
+
+export interface GalleryBlock {
+    type: 'gallery';
+    id: string;
+    title: string;
+    images: GalleryImage[];
+}
+
+export interface FeatureItem {
+    id: string;
+    icon: string; // e.g., 'Bed', 'Bath', 'Square'
+    title: string;
+    description: string;
+}
+
+export interface FeaturesBlock {
+    type: 'features';
+    id: string;
+    title: string;
+    features: FeatureItem[];
+}
+
+export interface ContactFormBlock {
+    type: 'contact_form';
+    id: string;
+    title: string;
+    buttonText: string;
+}
+
+export type LandingPageBlock = HeroBlock | GalleryBlock | FeaturesBlock | ContactFormBlock;
+
+export interface LandingPage {
+  id: string;
+  title: string;
+  status: 'Published' | 'Draft';
+  createdAt: string;
+  content: LandingPageBlock[];
+}
+
+export interface LandingPageInsight {
+    pageTitle: string;
+    views: number;
+    conversionRate: number;
+    leads: number;
+    bounceRate: number;
 }

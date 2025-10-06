@@ -41,7 +41,12 @@ const translations: Translations = {
   roas: { en: 'ROAS', ar: 'عائد الإنفاق الإعلاني' },
   bounce_rate: { en: 'Bounce Rate', ar: 'معدل الارتداد' },
   avg_time_on_page: { en: 'Avg. Time on Page', ar: 'متوسط الوقت في الصفحة' },
-  
+  landing_page_insights: { en: 'Landing Page Insights', ar: 'إحصائيات الصفحات المقصودة' },
+  page: { en: 'Page', ar: 'الصفحة' },
+  views: { en: 'Views', ar: 'المشاهدات' },
+  conversions: { en: 'Conversions', ar: 'التحويلات' },
+  leads: { en: 'Leads', ar: 'العملاء المحتملون' },
+
   // Sales Pipeline
   new_lead: { en: 'New Lead', ar: 'عميل محتمل جديد' },
   contacted: { en: 'Contacted', ar: 'تم التواصل' },
@@ -60,7 +65,6 @@ const translations: Translations = {
   delete_deal_title: { en: 'Delete Deal', ar: 'حذف الصفقة' },
   delete_deal_confirm: { en: 'Are you sure you want to delete this deal? This action cannot be undone.', ar: 'هل أنت متأكد أنك تريد حذف هذه الصفقة؟ لا يمكن التراجع عن هذا الإجراء.' },
   delete: { en: 'Delete', ar: 'حذف' },
-
 
   // Customers
   all_customers: { en: 'All Customers', ar: 'كل العملاء' },
@@ -161,7 +165,13 @@ const translations: Translations = {
   size_small: { en: 'Small (<1MB)', ar: 'صغير (<1 ميجابايت)' },
   size_medium: { en: 'Medium (1-10MB)', ar: 'متوسط (1-10 ميجابايت)' },
   size_large: { en: 'Large (>10MB)', ar: 'كبير (>10 ميجابايت)' },
-
+  generating: { en: 'Generating...', ar: 'جاري الإنشاء...' },
+  edit_with_ai: { en: 'Edit with AI', ar: 'تعديل بالذكاء الاصطناعي' },
+  edit_image: { en: 'Edit Image', ar: 'تعديل الصورة' },
+  edit_prompt: { en: 'Edit prompt', ar: 'موجه التعديل' },
+  edit_prompt_placeholder: { en: 'e.g., add a swimming pool, make it a sunny day', ar: 'مثال: أضف مسبحًا، اجعله يومًا مشمسًا' },
+  video_generating_message: { en: 'Your video is being generated. This may take a few minutes. Please wait...', ar: 'يتم إنشاء الفيديو الخاص بك. قد يستغرق هذا بضع دقائق. يرجى الانتظار...' },
+  
   // Settings
   api_keys: { en: 'API Keys', ar: 'مفاتيح API' },
   api_docs: { en: 'API Documentation', ar: 'توثيق API' },
@@ -195,10 +205,56 @@ const translations: Translations = {
   manage: { en: 'Manage', ar: 'إدارة' },
   all_users: { en: 'All Users', ar: 'جميع المستخدمين' },
 
+  // Landing Pages
+  landing_pages: { en: 'Landing Pages', ar: 'الصفحات المقصودة' },
+  create_page: { en: 'Create Page', ar: 'إنشاء صفحة' },
+  published: { en: 'Published', ar: 'منشور' },
+  draft: { en: 'Draft', ar: 'مسودة' },
+  preview: { en: 'Preview', ar: 'معاينة' },
+  landing_page_editor: { en: 'Landing Page Editor', ar: 'محرر الصفحة المقصودة' },
+  components: { en: 'Components', ar: 'المكونات' },
+  properties: { en: 'Properties', ar: 'الخصائص' },
+  close: { en: 'Close', ar: 'إغلاق' },
+  page_title: { en: 'Page Title', ar: 'عنوان الصفحة' },
+  drag_component: { en: 'Drag a component here', ar: 'اسحب مكونًا هنا' },
+  
+  // Landing Page Components
+  hero_section: { en: 'Hero Section', ar: 'قسم الهيرو' },
+  image_gallery: { en: 'Image Gallery', ar: 'معرض الصور' },
+  feature_list: { en: 'Feature List', ar: 'قائمة الميزات' },
+  contact_form: { en: 'Contact Form', ar: 'نموذج الاتصال' },
+  
+  // Landing Page Properties
+  main_title: { en: 'Main Title', ar: 'العنوان الرئيسي' },
+  subtitle: { en: 'Subtitle', ar: 'العنوان الفرعي' },
+  button_text: { en: 'Button Text', ar: 'نص الزر' },
+  image_url: { en: 'Image URL', ar: 'رابط الصورة' },
+  add_image: { en: 'Add Image', ar: 'إضافة صورة' },
+  feature_icon: { en: 'Icon', ar: 'أيقونة' },
+  feature_title: { en: 'Feature Title', ar: 'عنوان الميزة' },
+  feature_description: { en: 'Description', ar: 'الوصف' },
+  add_feature: { en: 'Add Feature', ar: 'إضافة ميزة' },
+  form_title: { en: 'Form Title', ar: 'عنوان النموذج' },
+
+
   // Form Actions
   save: { en: 'Save', ar: 'حفظ' },
   update: { en: 'Update', ar: 'تحديث' },
   cancel: { en: 'Cancel', ar: 'إلغاء' },
+  
+  // AI Features
+  ai_summary: { en: 'AI Summary', ar: 'ملخص الذكاء الاصطناعي' },
+  generating_summary: { en: 'Generating summary...', ar: 'جاري إنشاء الملخص...' },
+  ai_customer_summary: { en: 'AI Customer Profile Summary', ar: 'ملخص ملف العميل بالذكاء الاصطناعي' },
+  ai_deal_assistant: { en: 'AI Deal Assistant', ar: 'مساعد الصفقات الذكي' },
+  suggest_title: { en: 'Suggest Title', ar: 'اقتراح عنوان' },
+  generate_email: { en: 'Generate Follow-up Email', ar: 'إنشاء بريد إلكتروني للمتابعة' },
+  follow_up_email: { en: 'Follow-up Email Preview', ar: 'معاينة بريد المتابعة' },
+  generate_with_ai: { en: 'Generate with AI', ar: 'إنشاء باستخدام الذكاء الاصطناعي' },
+  ai_prompt_placeholder: { en: 'Enter a prompt to generate content...', ar: 'أدخل موجهًا لإنشاء المحتوى...' },
+  ai_task_breakdown: { en: 'AI Task Breakdown', ar: 'تحليل المهمة بالذكاء الاصطناعي' },
+  suggest_subtasks: { en: 'Suggest Sub-tasks', ar: 'اقتراح مهام فرعية' },
+  suggested_subtasks: { en: 'Suggested Sub-tasks', ar: 'المهام الفرعية المقترحة' },
 };
 
 export const LocalizationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

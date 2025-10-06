@@ -5,19 +5,18 @@ import { Button } from './ui/Button';
 import { useLocalization } from '../hooks/useLocalization';
 
 interface GenerateVideoFormProps {
-  onSave: (data: { prompt: string; duration: number; aspectRatio: string }) => void;
+  onSave: (data: { prompt: string }) => void;
   onCancel: () => void;
+  isGenerating: boolean;
 }
 
-export const GenerateVideoForm: React.FC<GenerateVideoFormProps> = ({ onSave, onCancel }) => {
+export const GenerateVideoForm: React.FC<GenerateVideoFormProps> = ({ onSave, onCancel, isGenerating }) => {
   const { t } = useLocalization();
   const [prompt, setPrompt] = useState('');
-  const [duration, setDuration] = useState(10);
-  const [aspectRatio, setAspectRatio] = useState('16:9');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({ prompt, duration, aspectRatio });
+    onSave({ prompt });
   };
 
   return (
@@ -37,29 +36,28 @@ export const GenerateVideoForm: React.FC<GenerateVideoFormProps> = ({ onSave, on
         name="duration"
         label={t('video_duration')}
         type="number"
-        value={duration}
-        onChange={(e) => setDuration(parseInt(e.target.value, 10))}
-        min="1"
-        max="60"
-        required
+        value={4}
+        readOnly
+        className="bg-maryon-hover"
       />
       <Select
         id="aspectRatio"
         name="aspectRatio"
         label={t('aspect_ratio')}
-        value={aspectRatio}
-        onChange={(e) => setAspectRatio(e.target.value)}
+        value={"16:9"}
+        readOnly
+        className="bg-maryon-hover"
       >
         <option value="16:9">16:9 (Landscape)</option>
         <option value="9:16">9:16 (Portrait)</option>
         <option value="1:1">1:1 (Square)</option>
       </Select>
       <div className="flex justify-end space-x-4 rtl:space-x-reverse pt-4">
-        <Button type="button" variant="secondary" onClick={onCancel}>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={isGenerating}>
           {t('cancel')}
         </Button>
-        <Button type="submit" variant="primary">
-          {t('generate')}
+        <Button type="submit" variant="primary" disabled={isGenerating}>
+          {isGenerating ? t('generating') : t('generate')}
         </Button>
       </div>
     </form>

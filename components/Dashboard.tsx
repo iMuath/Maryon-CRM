@@ -1,10 +1,11 @@
-import React from 'react';
-import { DollarSign, Users, CheckCircle, AlertCircle, Facebook, Instagram, Twitter, Linkedin } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { DollarSign, Users, CheckCircle, AlertCircle, Facebook, Instagram, Twitter, Linkedin, Sparkles } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { Card } from './ui/Card';
 import { useLocalization } from '../hooks/useLocalization';
-import { mockSocialInsights, mockEmailMarketingInsights } from '../data/mockData';
-import type { SocialMediaInsight, EmailMarketingInsight } from '../types';
+import { mockSocialInsights, mockEmailMarketingInsights, mockLandingPageInsights } from '../data/mockData';
+import type { SocialMediaInsight, EmailMarketingInsight, LandingPageInsight } from '../types';
+import { GoogleGenAI } from '@google/genai';
 
 const KPI_CARDS = [
   { id: 'revenue', icon: DollarSign, value: '$1.2M', change: '+12.5%', changeType: 'increase' },
@@ -43,6 +44,57 @@ const KPICard: React.FC<{ card: typeof KPI_CARDS[0] }> = ({ card }) => {
             </p>
         </Card>
     );
+}
+
+const AiSummaryCard: React.FC = () => {
+    const { t } = useLocalization();
+    const [summary, setSummary] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const generateSummary = async () => {
+            try {
+                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+                
+                const kpiText = KPI_CARDS.map(c => `${t(kpiLabels[c.id])}: ${c.value} (${c.change})`).join(', ');
+                const salesText = salesData.map(d => `${d.name}: $${d.revenue}`).join(', ');
+
+                const prompt = `As a business analyst for Maryon Real Estate, provide a short, insightful summary (2-3 sentences) of the company's performance based on this data. Highlight the most important trend. Data: KPIs - [${kpiText}]. Recent Sales Data - [${salesText}].`;
+
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: prompt,
+                });
+                
+                setSummary(response.text);
+            } catch (error) {
+                console.error("Error generating AI summary:", error);
+                setSummary("Could not generate summary at this time.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        generateSummary();
+    }, [t]);
+
+    return (
+        <Card className="col-span-full bg-maryon-text-primary text-white">
+            <div className="flex items-start justify-between">
+                 <h2 className="text-xl font-semibold mb-2">{t('ai_summary')}</h2>
+                 <Sparkles className="w-6 h-6 text-maryon-accent" />
+            </div>
+            {isLoading ? (
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <div className="w-2 h-2 bg-maryon-accent rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-maryon-accent rounded-full animate-pulse [animation-delay:0.2s]"></div>
+                    <div className="w-2 h-2 bg-maryon-accent rounded-full animate-pulse [animation-delay:0.4s]"></div>
+                    <span className="text-sm text-gray-300">{t('generating_summary')}</span>
+                </div>
+            ) : (
+                <p className="text-gray-300">{summary}</p>
+            )}
+        </Card>
+    )
 }
 
 const platformIcons: Record<SocialMediaInsight['platform'], React.ElementType> = {
@@ -120,11 +172,47 @@ const EmailMarketingInsightsCard: React.FC = () => {
     );
 };
 
+const LandingPageInsightsCard: React.FC = () => {
+    const { t } = useLocalization();
+    const headers = ['page', 'views', 'conversions', 'leads', 'bounce_rate'];
+
+    return (
+        <Card>
+            <h2 className="text-xl font-semibold text-maryon-text-primary mb-4">{t('landing_page_insights')}</h2>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-start text-maryon-text-secondary">
+                    <thead className="text-xs text-maryon-text-secondary uppercase bg-maryon-hover">
+                        <tr>
+                            {headers.map(header => (
+                                <th key={header} scope="col" className="px-6 py-3">{t(header)}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {mockLandingPageInsights.map((insight) => (
+                            <tr key={insight.pageTitle} className="border-b border-maryon-border hover:bg-maryon-hover">
+                                <th scope="row" className="px-6 py-4 font-medium text-maryon-text-primary whitespace-nowrap">
+                                    {insight.pageTitle}
+                                </th>
+                                <td className="px-6 py-4">{insight.views.toLocaleString()}</td>
+                                <td className="px-6 py-4">{insight.conversionRate.toFixed(1)}%</td>
+                                <td className="px-6 py-4">{insight.leads.toLocaleString()}</td>
+                                <td className="px-6 py-4">{insight.bounceRate.toFixed(1)}%</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </Card>
+    );
+}
+
 export const Dashboard: React.FC = () => {
     const {t} = useLocalization();
   return (
     <div className="space-y-8">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <AiSummaryCard />
         {KPI_CARDS.map(card => <KPICard key={card.id} card={card} />)}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -157,6 +245,7 @@ export const Dashboard: React.FC = () => {
         <SocialInsightsCard />
       </div>
       <EmailMarketingInsightsCard />
+      <LandingPageInsightsCard />
     </div>
   );
 };
